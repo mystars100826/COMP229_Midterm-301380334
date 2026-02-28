@@ -2,18 +2,28 @@ let CarModel = require('../models/cars');
 
 module.exports.getCar = async function (req, res, next) {
   try {
-    // Find one using the id sent in the parameter of the request
     let car = await CarModel.findOne({ _id: req.params.id });
+    if (!car) {
+      res.status(404);
+      return res.json({
+        success: false,
+        message: "Car not found."
+      });
+    }
 
-    // Set the response status
     res.status(200);
-
+    res.json({
+      success: true,
+      message: "Car retrieved successfully.",
+      data: car
+    });
 
   } catch (error) {
     console.log(error);
     next(error);
   }
 }
+
 
 module.exports.create = async function (req, res, next) {
   try {
@@ -24,9 +34,8 @@ module.exports.create = async function (req, res, next) {
     let result = await CarModel.create(car);
     console.log("Result: " + result);
 
-    // Set the response status
-    res.status(200);
-    // Send a response
+    
+    res.status(201);
     res.json(
       {
         success: true,
@@ -42,7 +51,7 @@ module.exports.create = async function (req, res, next) {
 
 }
 
-module.exports.getAll = async function (req, res, next) {
+module.exports.getAllCars = async function (req, res, next) {
   try {
     // Get all from the DB.
     let list = await CarModel.find({});
@@ -71,11 +80,14 @@ module.exports.update = async function (req, res, next) {
     updatedCar._id = req.params.id;
 
     // Submit the change
-    let result = await CarModel.updateOne();
-    console.log("Result: " + result);
-
+    let result = await CarModel.updateOne(
+    { _id: req.params.id },
+    { $set: req.body },
+   );
+   console.log("Result: " + JSON.stringify(result));
+  
     // Handle the result: send a response.
-    if (result.modifiedCount > 0) {
+    if (result.matchedCount > 0) {
       res.status(200);
       res.json(
         {
@@ -84,7 +96,11 @@ module.exports.update = async function (req, res, next) {
         }
       );
     } else {
-      throw new Error('Car not updated. Are you sure it exists?')
+      res.status(404);
+      res.json({
+        success: false,
+        message: "Car not updated. Are you sure it exists?"
+      });
     }
 
   } catch (error) {
@@ -97,8 +113,8 @@ module.exports.update = async function (req, res, next) {
 module.exports.remove = async function (req, res, next) {
   try {
     // Delete  using the id received in the parameter of the request
-    let result = await CarModel.deleteOne({ _id: req.params.carId });
-    console.log("Result: " + result);
+    let result = await CarModel.deleteOne({ _id: req.params.id });
+    //console.log("Result: " + JSON.stringify(result));
 
     // Handle the result and send a response
     if (result.deletedCount > 0) {
@@ -110,9 +126,12 @@ module.exports.remove = async function (req, res, next) {
         }
       );
     } else {
-      throw new Error('Car not deleted. Are you sure it exists?')
+      res.status(404);
+      res.json({
+        success: false,
+        message: "Car not deleted. Are you sure it exists?"
+      });
     }
-
   } catch (error) {
     console.log(error);
     next(error);
